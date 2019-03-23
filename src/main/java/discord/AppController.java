@@ -11,7 +11,6 @@ public class AppController
 {
 
     private static final Logger log = LoggerFactory.getLogger(AppController.class);
-    private static SseEmitter emitter;
     private Schedule schedule;
 
     public AppController()
@@ -19,29 +18,30 @@ public class AppController
         schedule = new Schedule();
     }
 
-    public void initEmitter ()
-    {
-        emitter = new SseEmitter();
-        emitter.onTimeout(new Runnable(){
-        
-            @Override
-            public void run() {
-                log.info("timeout");
-                initEmitter();
-            }
-        });
-        schedule.addEmitter(emitter);
-    }
-
     @GetMapping("/default")
-    public String defaultGet() {
-        initEmitter();
+    public String defaultGet()
+    {
         return "default";
     }
 
-    @GetMapping("/sse")
-    public SseEmitter handleSse()
+    private void notifyProgress(SseEmitter emitter, String str)
     {
+        try
+        {
+            emitter.send(str);
+        }
+        catch (Exception ex) {
+            log.info(ex.getMessage());
+            emitter.completeWithError(ex);
+        }
+    }
+
+    @GetMapping("/sse")
+    public SseEmitter streamSseMvc() {
+        SseEmitter emitter = new SseEmitter(1440000L);
+        schedule.GetSubject().subscribe(value -> notifyProgress(emitter, value),
+        emitter::completeWithError,
+        emitter::complete);
         return emitter;
     }
 }

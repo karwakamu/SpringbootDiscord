@@ -1,7 +1,5 @@
 package discord;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.Timer;
@@ -11,7 +9,6 @@ import rx.subjects.PublishSubject;
 public class Schedule
 {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
-    private static final Logger log = LoggerFactory.getLogger(AppController.class);
     private Timer timer;
     private PublishSubject<String> subject;
 

@@ -1,7 +1,5 @@
 package discord;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -9,13 +7,14 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Controller
 public class AppController
 {
-
-    private static final Logger log = LoggerFactory.getLogger(AppController.class);
     private Schedule schedule;
+    private DiscordClient discordClient;
 
     public AppController()
     {
         schedule = new Schedule();
+        discordClient = new DiscordClient();
+        discordClient.Connect();
     }
 
     @GetMapping("/default")
@@ -31,7 +30,6 @@ public class AppController
             emitter.send(str);
         }
         catch (Exception ex) {
-            log.info(ex.getMessage());
             emitter.completeWithError(ex);
         }
     }

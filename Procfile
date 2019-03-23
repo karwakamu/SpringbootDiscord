@@ -1,1 +1,1 @@
-worker: java -jar target/discord.jar
+web: java -jar target/discord.jar

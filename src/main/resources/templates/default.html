@@ -1,10 +1,19 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org">
+<html>
 <head>
-    <title>Getting Started: Serving Web Content</title>
+    <title>paska sivu idiooteille</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script>
+        var sse = new EventSource('/sse');
+        sse.onmessage = function (evt) {
+            console.log("asd");
+            var el = document.getElementById('sse');
+            el.appendChild(document.createTextNode(evt.data));
+            el.appendChild(document.createElement('br'));
+        };
+    </script>
 </head>
 <body>
-    <p th:text="'Hello, ' + ${name} + '!'" />
+    <div id="sse" />
 </body>
 </html>

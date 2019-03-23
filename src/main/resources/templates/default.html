@@ -6,7 +6,6 @@
     <script>
         var sse = new EventSource('/sse');
         sse.onmessage = function (evt) {
-            console.log("asd");
             var el = document.getElementById('sse');
             el.appendChild(document.createTextNode(evt.data));
             el.appendChild(document.createElement('br'));

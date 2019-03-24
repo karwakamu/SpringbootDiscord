@@ -7,14 +7,20 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Controller
 public class AppController
 {
-    private Schedule schedule;
     private DiscordClient discordClient;
 
     public AppController()
     {
-        schedule = new Schedule();
         discordClient = new DiscordClient();
-        discordClient.Connect();
+
+        try
+        {
+            discordClient.Connect();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
     @GetMapping("/default")
@@ -35,9 +41,10 @@ public class AppController
     }
 
     @GetMapping("/sse")
-    public SseEmitter streamSseMvc() {
+    public SseEmitter streamSseMvc()
+    {
         SseEmitter emitter = new SseEmitter(1440000L);
-        schedule.GetSubject().subscribe(value -> notifyProgress(emitter, value),
+        discordClient.GetSubject().subscribe(value -> notifyProgress(emitter, value),
         emitter::completeWithError,
         emitter::complete);
         return emitter;

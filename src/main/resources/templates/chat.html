@@ -4,15 +4,15 @@
     <title>paska sivu idiooteille</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <script>
-        var sse = new EventSource('/sse');
+        var sse = new EventSource('/chatSSE');
         sse.onmessage = function (evt) {
-            var el = document.getElementById('sse');
+            var el = document.getElementById('chatDIV');
             el.appendChild(document.createTextNode(evt.data));
             el.appendChild(document.createElement('br'));
         };
     </script>
 </head>
 <body>
-    <div id="sse" />
+    <div id="chatDIV" />
 </body>
 </html>

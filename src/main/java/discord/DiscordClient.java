@@ -6,8 +6,13 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -23,23 +28,33 @@ import rx.subjects.PublishSubject;
 public class DiscordClient {
 
     private static final Logger log = LoggerFactory.getLogger(AppController.class);
-    private PublishSubject<String> subject;
+    private PublishSubject<DiscordMessage> subject;
+    public Map<String, String> channels;
     private String token = "NTQ1OTUxNjYxNjcyMzY2MTEw.D3gcKQ.QL1qxBbdREraywJi188IAucLAe4";
+
+    public class DiscordMessage
+    {
+        public String channel;
+        public String user;
+        public String content;
+
+        public DiscordMessage(String channel, String user, String content)
+        {
+            this.channel = channel;
+            this.user = user;
+            this.content = content;
+        }
+    }
 
     public DiscordClient()
     {
+        channels = new HashMap<String,String>();
         subject = PublishSubject.create();
     }
     
-    public PublishSubject<String> GetSubject()
+    public PublishSubject<DiscordMessage> GetSubject()
     {
         return subject;
-    }
-
-    public void writeMessage(String user, String content)
-    {
-        String str = "<" + user + "> " + content;
-        subject.onNext(str);
     }
 
     private String GetWebsocketURL()
@@ -130,7 +145,7 @@ public class DiscordClient {
             JSONmessage = new JSONObject(message.getPayload());
 
             Object payloadOBJ = JSONmessage.get("d");
-            if(payloadOBJ != JSONObject.NULL) JSONpayload = (JSONObject)payloadOBJ;
+            if(payloadOBJ != JSONObject.NULL) JSONpayload = new JSONObject(payloadOBJ.toString());
             
             int op = JSONmessage.getInt("op");
 
@@ -145,12 +160,29 @@ public class DiscordClient {
                             break;
 
                         case "MESSAGE_CREATE":
-                            
                             JSONObject JSONuser = JSONpayload.getJSONObject("author");
                             String user = JSONuser.getString("username");
+                            String channel = JSONpayload.getString("channel_id");
                             String content = JSONpayload.getString("content");
-                            writeMessage(user, content);
+                            DiscordMessage discordMessage = new DiscordMessage(channel,user,content);
+                            subject.onNext(discordMessage);
                             break;
+
+                        case "GUILD_CREATE":
+                            JSONArray JSONchannels = JSONpayload.getJSONArray("channels");
+                            
+                            for(int i = 0; i < JSONchannels.length(); i++)
+                            {
+                                JSONObject JSONchannel = (JSONObject)JSONchannels.get(i);
+                                if(JSONchannel.getInt("type") == 0)
+                                {
+                                    String id = JSONchannel.getString("id");
+                                    String name = JSONchannel.getString("name");
+                                    channels.put(id, name);
+                                }
+                            }
+                            break;
+
                     }       
                     break;
 

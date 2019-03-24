@@ -3,9 +3,10 @@ package discord;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import discord.DiscordClient.DiscordMessage;
+import discord.DiscordMessage;
 import javax.servlet.http.HttpSession;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -29,7 +30,7 @@ public class AppController {
     @GetMapping("/index")
     public String getIndex(Model model) {
         String str ="";
-        for (Map.Entry<String, String> pair : discordClient.channels.entrySet())
+        for (Map.Entry<String, String> pair : discordClient.GetChannels().entrySet())
         {
             str += "<a href=\"/chat?channel=" + pair.getKey() + "\">" + pair.getValue()  + "</a><br/>";
         }
@@ -38,9 +39,9 @@ public class AppController {
     }
 
     @GetMapping("/chat")
-    public String defaultGet(@RequestParam(name="channel", required=false, defaultValue="World") String channel, HttpSession session)
+    public String defaultGet(@RequestParam(name="channel", required=false, defaultValue="") String channel, HttpSession session)
     {
-        session.setAttribute("channel", channel);
+        if(!channel.equals(""))session.setAttribute("channel", channel);
         return "chat";
     }
 
@@ -48,9 +49,9 @@ public class AppController {
     {
         try
         {
-            if(emitter.channel.equals(message.channel))
+            if(emitter.channel.equals(message.GetChannel()))
             {
-                String str = "<" + message.user + ">    " + message.content;
+                String str = "<" + message.GetUser() + ">    " + message.GetContent();
                 emitter.send(str);
             }
         }
@@ -79,5 +80,13 @@ public class AppController {
         emitter::completeWithError,
         emitter::complete);
         return emitter;
+    }
+
+    @PostMapping("/chat")
+    public void postMessage(@RequestParam(name="message", required=false, defaultValue="") String message, HttpSession session) throws Exception
+    {
+        log.info(message);
+        log.info(session.getAttribute("channel").toString());
+        discordClient.SendMessage(message, session.getAttribute("channel").toString());
     }
 }

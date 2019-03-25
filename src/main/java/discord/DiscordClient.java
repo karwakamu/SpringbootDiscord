@@ -13,11 +13,10 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import rx.subjects.PublishSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import discord.DiscordMessage;
 
 public class DiscordClient {
     private static final Logger log = LoggerFactory.getLogger(DiscordClient.class);
-    private PublishSubject<DiscordMessage> subject;
+    private PublishSubject<JSONObject> subject;
     private DiscordWebSocketHandler socketHandler;
     private Map<String, String> channels;
     private String token = "NTQ1OTUxNjYxNjcyMzY2MTEw.D3gcKQ.QL1qxBbdREraywJi188IAucLAe4";
@@ -36,11 +35,11 @@ public class DiscordClient {
         return channels;
     }
 
-    public PublishSubject<DiscordMessage> GetSubject() {
+    public PublishSubject<JSONObject> GetSubject() {
         return subject;
     }
 
-    public void ReceivedMessage(DiscordMessage message) {
+    public void ReceivedMessage(JSONObject message) {
         subject.onNext(message);
     }
 
@@ -74,12 +73,12 @@ public class DiscordClient {
         connectionManager.start();
     }
 
-    public void SendMessage(String message, String channel) throws Exception
+    public void SendMessage(JSONObject JSONmessage) throws Exception
     {
-        JSONObject JSONmessage = new JSONObject();
-        JSONmessage.put("content",message);
-        JSONmessage.put("tts", false);
+        String channel = JSONmessage.getString("channel_id");
+        if(channel.isEmpty() || channel.equals("")) return;
 
+        JSONmessage.put("tts", false);
         URL url = new URL("https://discordapp.com/api/channels/" + channel + "/messages");
 
         HttpURLConnection con = (HttpURLConnection) url.openConnection();

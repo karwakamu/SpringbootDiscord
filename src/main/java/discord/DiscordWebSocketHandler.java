@@ -11,7 +11,6 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import discord.DiscordMessage;
 
 public class DiscordWebSocketHandler extends TextWebSocketHandler
 {
@@ -69,10 +68,12 @@ public class DiscordWebSocketHandler extends TextWebSocketHandler
 
                     case "MESSAGE_CREATE":
                         JSONObject JSONuser = JSONpayload.getJSONObject("author");
-                        String user = JSONuser.getString("username");
-                        String channel = JSONpayload.getString("channel_id");
-                        String content = JSONpayload.getString("content");
-                        DiscordMessage discordMessage = new DiscordMessage(channel,user,content);
+                        JSONObject discordMessage = new JSONObject();
+
+                        discordMessage.put("username", JSONuser.getString("username"));
+                        discordMessage.put("channel_id", JSONpayload.getString("channel_id"));
+                        discordMessage.put("content", JSONpayload.getString("content"));
+
                         discordClient.ReceivedMessage(discordMessage);
                         break;
 

@@ -5,28 +5,49 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <script type="text/javascript" src="webjars/jquery/3.3.1/jquery.min.js"></script>
     <script>
-        var sse = new EventSource('/chatSSE');
-        sse.onmessage = function (evt) {
-            var el = document.getElementById('chatDIV');
-            el.appendChild(document.createTextNode(evt.data));
-            el.appendChild(document.createElement('br'));
+        var channel = {id: ""};
+
+        var chatSse = new EventSource("api/chat");
+        chatSse.onmessage = function (evt) {
+            var message = JSON.parse(evt.data);
+            if(message.channel_id === channel.id)
+            {
+                var el = document.getElementById("chatDIV");
+                var text = "<" + message.username + ">    " + message.content;
+                el.appendChild(document.createTextNode(text));
+                el.appendChild(document.createElement("br"));
+            }
         };
 
         function sendMessage(){
             var textbox = document.getElementById("textbox")
-            var msg = textbox.value;
+            var message = {content: textbox.value, channel_id: channel.id}
             textbox.value = "";
-            $.post("/chat?message=" + msg);
+            $.post("api/message", message);
+        };
 
-        }
+        function setChannel(element){
+            document.getElementById("chatDIV").innerHTML = "";
+            channel.id = element.value;
+        };
     </script>
 </head>
 <body>
     
     <div style="padding:15px">
-        <div id="chatDIV" style="padding:15px;height:600px;overflow-y:scroll;"/>
+        <div id="chatDIV" style="padding:15px;height:600px;overflow-y:scroll;"></div>
     </div>
-    <input id="textbox" type="text">
-    <button class="btn btn-success btn-lg" onclick="sendMessage()">SEND</button>
+    <table>
+        <tr>
+            <td>
+                <div th:utext="${channels}"></div>
+            </td>
+            <td style="width:20px;" />
+            <td>
+                <input id="textbox" type="text">
+                <button onclick="sendMessage()">SEND</button>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

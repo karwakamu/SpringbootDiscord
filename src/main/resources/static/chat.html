@@ -53,6 +53,7 @@
         var addChannelSse = new EventSource("api/channel/add");
         addChannelSse.onmessage = function (evt)
         {
+            removeConnect();
             var newChannel = JSON.parse(evt.data);
 
             var oldChannel = document.getElementById(newChannel.id);
@@ -89,8 +90,14 @@
 
         function init()
         {
-            document.getElementById("connectDIV").innerHTML = "";
+            removeConnect();
             $.get('api/init');
+        };
+
+        function removeConnect()
+        {
+            var connect = document.getElementById("connectDIV");
+            if(connect != null) connect.innerHTML = "";
         };
     </script>
 </head>

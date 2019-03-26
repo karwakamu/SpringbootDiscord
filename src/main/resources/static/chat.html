@@ -36,6 +36,11 @@
         {
             var newChannel = JSON.parse(evt.data);
 
+            var oldChannel = document.getElementById(newChannel.id);
+            if(oldChannel != null)
+            {
+                return;
+            }
             var div = document.getElementById("channelDIV");
 
             var buttonDIV = document.createElement("div");

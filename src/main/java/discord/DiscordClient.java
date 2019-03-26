@@ -118,9 +118,7 @@ public class DiscordClient {
         String content =  HttpGET(url);
         JSONArray JSONmessages = new JSONArray(content);
 
-        for (int i = JSONmessages.length() - 1; i >= 0; i--) {
-            WriteMessage(JSONmessages.optJSONObject(i));
-        }
+        WritebulkMessage(JSONmessages);
     }
 
     private String GetWebsocketURL() throws Exception {

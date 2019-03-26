@@ -30,7 +30,6 @@
         var bulkWriteMessageSse = new EventSource("api/message/writebulk");
         bulkWriteMessageSse.onmessage = function (evt)
         {
-            console.log(chatClear.pending);
             if(chatClear.pending == true)
             {
                 document.getElementById("chatDIV").innerHTML = "";

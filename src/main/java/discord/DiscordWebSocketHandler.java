@@ -5,7 +5,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -67,7 +66,7 @@ public class DiscordWebSocketHandler extends TextWebSocketHandler
                         break;
 
                     case "MESSAGE_CREATE":
-                        discordClient.ReceiveMessage(JSONpayload);
+                        discordClient.WriteMessage(JSONpayload);
                         break;
 
                     case "CHANNEL_CREATE":

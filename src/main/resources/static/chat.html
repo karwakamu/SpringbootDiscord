@@ -9,7 +9,7 @@
 
         var channel = {id: ""};
 
-        var receiveMessageSse = new EventSource("api/message/receive");
+        var receiveMessageSse = new EventSource("api/message/write");
         receiveMessageSse.onmessage = function (evt)
         {
             var message = JSON.parse(evt.data);
@@ -19,6 +19,7 @@
                 var text = "<" + message.username + ">    " + message.content;
                 div.appendChild(document.createTextNode(text));
                 div.appendChild(document.createElement("br"));
+                div.scrollTop = div.scrollHeight;
             }
         };
         
@@ -60,6 +61,8 @@
         function setChannel(element){
             document.getElementById("chatDIV").innerHTML = "";
             channel.id = element.value;
+            var message = {channel_id: channel.id}
+            $.post("api/message/get", message);
         };
     </script>
 </head>

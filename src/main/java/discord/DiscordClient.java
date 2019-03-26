@@ -5,9 +5,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -18,52 +15,44 @@ import rx.subjects.PublishSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DiscordClient
-{
+public class DiscordClient {
     private static final Logger log = LoggerFactory.getLogger(DiscordClient.class);
     private String GuildID;
 
-    private PublishSubject<JSONObject> ReceiveMessageSubject;
+    private PublishSubject<JSONObject> WriteMessageSubject;
     private PublishSubject<JSONObject> AddChannelSubject;
     private PublishSubject<JSONObject> DeleteChannelSubject;
 
     private DiscordWebSocketHandler socketHandler;
     private String token = "NTQ1OTUxNjYxNjcyMzY2MTEw.D3gcKQ.QL1qxBbdREraywJi188IAucLAe4";
 
-    public DiscordClient()
-    {
+    public DiscordClient() {
         AddChannelSubject = PublishSubject.create();
         DeleteChannelSubject = PublishSubject.create();
-        ReceiveMessageSubject = PublishSubject.create();
+        WriteMessageSubject = PublishSubject.create();
     }
 
-    public void SetGuilID(String id)
-    {
+    public void SetGuilID(String id) {
         GuildID = id;
     }
 
-    public String GetToken()
-    {
+    public String GetToken() {
         return token;
     }
 
-    public PublishSubject<JSONObject> GetAddChannelSubject()
-    {
+    public PublishSubject<JSONObject> GetAddChannelSubject() {
         return AddChannelSubject;
     }
 
-    public PublishSubject<JSONObject> GetDeleteChannelSubject()
-    {
+    public PublishSubject<JSONObject> GetDeleteChannelSubject() {
         return DeleteChannelSubject;
     }
 
-    public PublishSubject<JSONObject> GetReceiveMessageSubject()
-    {
-        return ReceiveMessageSubject;
+    public PublishSubject<JSONObject> GetWriteMessageSubject() {
+        return WriteMessageSubject;
     }
 
-    public void ReceiveMessage(JSONObject payload) throws JSONException
-    {
+    public void WriteMessage(JSONObject payload) throws JSONException {
         JSONObject author = payload.getJSONObject("author");
         JSONObject message = new JSONObject();
 
@@ -71,76 +60,55 @@ public class DiscordClient
         message.put("channel_id", payload.getString("channel_id"));
         message.put("content", payload.getString("content"));
 
-        ReceiveMessageSubject.onNext(message);
+        WriteMessageSubject.onNext(message);
     }
 
-    public void AddChannel(JSONObject payload) throws JSONException
-    {
-        if(payload.getInt("type") != 0) return;
+    public void AddChannel(JSONObject payload) throws JSONException {
+        if (payload.getInt("type") != 0)
+            return;
 
         JSONObject channel = new JSONObject();
-        
+
         channel.put("id", payload.getString("id"));
         channel.put("name", payload.getString("name"));
         AddChannelSubject.onNext(channel);
     }
 
-    public void DeleteChannel(JSONObject payload) throws JSONException
-    {
+    public void DeleteChannel(JSONObject payload) throws JSONException {
         JSONObject channel = new JSONObject();
-        
+
         channel.put("id", payload.getString("id"));
         channel.put("name", payload.getString("name"));
         DeleteChannelSubject.onNext(channel);
     }
 
-    public void GetChannels() throws Exception 
-    {
+    public void GetChannels() throws Exception {
         URL url = new URL("https://discordapp.com/api/guilds/" + GuildID + "/channels");
+        String content =  HttpGET(url);
+        JSONArray JSONchannels = new JSONArray(content);
 
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-
-        con.setRequestMethod("GET");
-        con.setRequestProperty("User-Agent", "vittu");
-        con.setRequestProperty("Authorization", "Bot " + token);
-        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuffer content = new StringBuffer();
-        while ((inputLine = in.readLine()) != null)
-        {
-            content.append(inputLine);
-        }
-        in.close();
-        con.disconnect();
-        
-        JSONArray JSONchannels = new JSONArray(content.toString());
-        
-        for(int i = 0; i < JSONchannels.length(); i++)
-        {
+        for (int i = 0; i < JSONchannels.length(); i++) {
             AddChannel(JSONchannels.optJSONObject(i));
         }
     }
 
-    private String GetWebsocketURL() throws Exception
-    {
-        URL url = new URL("https://discordapp.com/api/gateway");
+    public void GetMessageHistory(String ChannelID) throws Exception {
+        if (ChannelID.isEmpty() || ChannelID.equals(""))
+            return;
 
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        URL url = new URL("https://discordapp.com/api/channels/" + ChannelID + "/messages");
+        String content =  HttpGET(url);
+        JSONArray JSONmessages = new JSONArray(content);
 
-        con.setRequestMethod("GET");
-        con.setRequestProperty("User-Agent", "vittu");
-        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuffer content = new StringBuffer();
-        while ((inputLine = in.readLine()) != null)
-        {
-            content.append(inputLine);
+        for (int i = JSONmessages.length() - 1; i >= 0; i--) {
+            WriteMessage(JSONmessages.optJSONObject(i));
         }
-        in.close();
+    }
 
-        con.disconnect();
-
-        JSONObject json = new JSONObject(content.toString());
+    private String GetWebsocketURL() throws Exception {
+        URL url = new URL("https://discordapp.com/api/gateway");
+        String content =  HttpGET(url);
+        JSONObject json = new JSONObject(content);
         return json.getString("url");
     }
 
@@ -153,10 +121,10 @@ public class DiscordClient
         connectionManager.start();
     }
 
-    public void SendMessage(JSONObject JSONmessage) throws Exception
-    {
+    public void SendMessage(JSONObject JSONmessage) throws Exception {
         String channel = JSONmessage.getString("channel_id");
-        if(channel.isEmpty() || channel.equals("")) return;
+        if (channel.isEmpty() || channel.equals(""))
+            return;
 
         JSONmessage.put("tts", false);
         URL url = new URL("https://discordapp.com/api/channels/" + channel + "/messages");
@@ -174,8 +142,28 @@ public class DiscordClient
         OutputStreamWriter wr = new OutputStreamWriter(con.getOutputStream(), "utf-8");
         wr.write(JSONmessage.toString());
         wr.flush();
-        
-        con.getResponseCode(); 
+
+        con.getResponseCode();
         con.disconnect();
+    }
+
+    private String HttpGET(URL url) throws Exception
+    {
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+
+        con.setRequestMethod("GET");
+        con.setRequestProperty("User-Agent", "vittu");
+        con.setRequestProperty("Authorization", "Bot " + token);
+        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuffer content = new StringBuffer();
+        while ((inputLine = in.readLine()) != null)
+        {
+            content.append(inputLine);
+        }
+        in.close();
+        con.disconnect();
+
+        return content.toString();
     }
 }

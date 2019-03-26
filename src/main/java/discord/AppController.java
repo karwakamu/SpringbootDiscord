@@ -5,9 +5,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import rx.Subscription;
 import java.util.Map;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -45,7 +43,7 @@ public class AppController
     }
 
     @GetMapping("api/channel/add")
-    public SseEmitter getChannelCreate()
+    public SseEmitter getChannelAdd()
     {
         SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
         emitter.SetSubscription(discordClient.GetAddChannelSubject().subscribe(value -> notifyProgress(emitter, value),
@@ -64,18 +62,18 @@ public class AppController
         return emitter;
     }
 
-    @GetMapping("api/message/receive")
-    public SseEmitter getMessageReceive()
+    @GetMapping("api/message/write")
+    public SseEmitter getMessageWrite()
     {
         SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
-        emitter.SetSubscription(discordClient.GetReceiveMessageSubject().subscribe(value -> notifyProgress(emitter, value),
+        emitter.SetSubscription(discordClient.GetWriteMessageSubject().subscribe(value -> notifyProgress(emitter, value),
         emitter::completeWithError,
         emitter::complete));
         return emitter;
     }
 
     @PostMapping("api/message/send")
-    public void postMessage(@RequestParam Map<String, String> messageMap) throws Exception
+    public void postMessageSen(@RequestParam Map<String, String> messageMap) throws Exception
     {
         JSONObject JSONmessage = new JSONObject();
 
@@ -85,6 +83,19 @@ public class AppController
         }
 
         discordClient.SendMessage(JSONmessage);
+    }
+
+    @PostMapping("api/message/get")
+    public void postMessageGet(@RequestParam Map<String, String> channelMap) throws Exception
+    {
+        JSONObject JSONmessage = new JSONObject();
+
+        for (Map.Entry<String, String> pair : channelMap.entrySet())
+        {
+            JSONmessage.put(pair.getKey(), pair.getValue());
+        }
+
+        discordClient.GetMessageHistory(JSONmessage.getString("channel_id"));
     }
 
     private void notifyProgress(SubscribedEmitter emitter, JSONObject message)

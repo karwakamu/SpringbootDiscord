@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.Map;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +48,7 @@ public class AppController
     public SseEmitter getChannelAdd()
     {
         SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
-        emitter.SetSubscription(discordClient.GetAddChannelSubject().subscribe(value -> notifyProgress(emitter, value),
+        emitter.SetSubscription(discordClient.GetAddChannelSubject().subscribe(value -> sendJSON(emitter, value),
         emitter::completeWithError,
         emitter::complete));
         return emitter;
@@ -56,7 +58,7 @@ public class AppController
     public SseEmitter getChannelDelete()
     {
         SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
-        emitter.SetSubscription(discordClient.GetDeleteChannelSubject().subscribe(value -> notifyProgress(emitter, value),
+        emitter.SetSubscription(discordClient.GetDeleteChannelSubject().subscribe(value -> sendJSON(emitter, value),
         emitter::completeWithError,
         emitter::complete));
         return emitter;
@@ -66,14 +68,24 @@ public class AppController
     public SseEmitter getMessageWrite()
     {
         SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
-        emitter.SetSubscription(discordClient.GetWriteMessageSubject().subscribe(value -> notifyProgress(emitter, value),
+        emitter.SetSubscription(discordClient.GetWriteMessageSubject().subscribe(value -> sendJSON(emitter, value),
+        emitter::completeWithError,
+        emitter::complete));
+        return emitter;
+    }
+
+    @GetMapping("api/message/writebulk")
+    public SseEmitter getMessageWritebulk()
+    {
+        SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
+        emitter.SetSubscription(discordClient.GetWritebulkMessageSubject().subscribe(value -> sendJSONarray(emitter, value),
         emitter::completeWithError,
         emitter::complete));
         return emitter;
     }
 
     @PostMapping("api/message/send")
-    public void postMessageSen(@RequestParam Map<String, String> messageMap) throws Exception
+    public void postMessageSend(@RequestParam Map<String, String> messageMap) throws Exception
     {
         JSONObject JSONmessage = new JSONObject();
 
@@ -98,7 +110,20 @@ public class AppController
         discordClient.GetMessageHistory(JSONmessage.getString("channel_id"));
     }
 
-    private void notifyProgress(SubscribedEmitter emitter, JSONObject message)
+    private void sendJSON(SubscribedEmitter emitter, JSONObject message)
+    {
+        try
+        {
+            emitter.send(message.toString());
+        }
+        catch (Exception ex)
+        {
+            emitter.Unsubscribe();
+            emitter.completeWithError(ex);
+        }
+    }
+
+    private void sendJSONarray(SubscribedEmitter emitter, JSONArray message)
     {
         try
         {

@@ -22,7 +22,7 @@ public class DiscordClient {
     private PublishSubject<JSONObject> WriteMessageSubject;
     private PublishSubject<JSONObject> AddChannelSubject;
     private PublishSubject<JSONObject> DeleteChannelSubject;
-
+    private PublishSubject<JSONArray> WritebulkMessageSubject;
     private DiscordWebSocketHandler socketHandler;
     private String token = "NTQ1OTUxNjYxNjcyMzY2MTEw.D3gcKQ.QL1qxBbdREraywJi188IAucLAe4";
 
@@ -30,6 +30,7 @@ public class DiscordClient {
         AddChannelSubject = PublishSubject.create();
         DeleteChannelSubject = PublishSubject.create();
         WriteMessageSubject = PublishSubject.create();
+        WritebulkMessageSubject = PublishSubject.create();
     }
 
     public void SetGuilID(String id) {
@@ -52,6 +53,10 @@ public class DiscordClient {
         return WriteMessageSubject;
     }
 
+    public PublishSubject<JSONArray> GetWritebulkMessageSubject() {
+        return WritebulkMessageSubject;
+    }
+
     public void WriteMessage(JSONObject payload) throws JSONException {
         JSONObject author = payload.getJSONObject("author");
         JSONObject message = new JSONObject();
@@ -61,6 +66,19 @@ public class DiscordClient {
         message.put("content", payload.getString("content"));
 
         WriteMessageSubject.onNext(message);
+    }
+
+    public void WritebulkMessage(JSONArray JSONmessages) throws JSONException {
+        JSONArray messages = new JSONArray();
+        for (int i = JSONmessages.length() - 1; i >= 0; i--) {
+            JSONObject message = new JSONObject();
+            JSONObject obj = JSONmessages.optJSONObject(i);
+            message.put("username", obj.getJSONObject("author").getString("username"));
+            message.put("channel_id", obj.getString("channel_id"));
+            message.put("content", obj.getString("content"));
+            messages.put(message);
+        }
+        WritebulkMessageSubject.onNext(messages);
     }
 
     public void AddChannel(JSONObject payload) throws JSONException {

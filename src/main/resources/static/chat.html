@@ -5,14 +5,11 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <script type="text/javascript" src="webjars/jquery/3.3.1/jquery.min.js"></script>
     <script>
-        $.get("api/init");
-
         var channel = {id: ""};
+        var chatClearPending = true;
 
-        var receiveMessageSse = new EventSource("api/message/write");
-        receiveMessageSse.onmessage = function (evt)
+        function writeMessage(message)
         {
-            var message = JSON.parse(evt.data);
             if(message.channel_id === channel.id)
             {
                 var div = document.getElementById("chatDIV");
@@ -20,6 +17,28 @@
                 div.appendChild(document.createTextNode(text));
                 div.appendChild(document.createElement("br"));
                 div.scrollTop = div.scrollHeight;
+            }
+        }
+
+        var writeMessageSse = new EventSource("api/message/write");
+        writeMessageSse.onmessage = function (evt)
+        {
+            var message = JSON.parse(evt.data);
+            writeMessage(message);
+        };
+
+        var bulkWriteMessageSse = new EventSource("api/message/writebulk");
+        bulkWriteMessageSse.onmessage = function (evt)
+        {
+            if(chatClearPending)
+            {
+                document.getElementById("chatDIV").innerHTML = "";
+                var messages = JSON.parse(evt.data);
+                for(var i in messages)
+                {
+                    writeMessage(messages[i]);
+                }
+                chatClearPending = false;
             }
         };
         
@@ -31,16 +50,14 @@
             if(deletedChannel != null) deletedChannel.outerHTML = "";
         };
 
-        var createChannelSse = new EventSource("api/channel/add");
-        createChannelSse.onmessage = function (evt)
+        var addChannelSse = new EventSource("api/channel/add");
+        addChannelSse.onmessage = function (evt)
         {
             var newChannel = JSON.parse(evt.data);
 
             var oldChannel = document.getElementById(newChannel.id);
-            if(oldChannel != null)
-            {
-                return;
-            }
+            if(oldChannel != null) return;
+
             var div = document.getElementById("channelDIV");
 
             var buttonDIV = document.createElement("div");
@@ -64,10 +81,16 @@
         };
 
         function setChannel(element){
-            document.getElementById("chatDIV").innerHTML = "";
+            chatClearPending = true;
             channel.id = element.value;
             var message = {channel_id: channel.id}
             $.post("api/message/get", message);
+        };
+
+        function init()
+        {
+            document.getElementById("connectDIV").innerHTML = "";
+            $.get('api/init');
         };
     </script>
 </head>
@@ -85,6 +108,11 @@
             <td>
                 <input id="textbox" type="text">
                 <button onclick="sendMessage()">SEND</button>
+            </td>
+            <td>
+                <div id="connectDIV">
+                    <button onclick="init()">CONNECT</button>
+                </div>
             </td>
         </tr>
     </table>

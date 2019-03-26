@@ -6,7 +6,7 @@
     <script type="text/javascript" src="webjars/jquery/3.3.1/jquery.min.js"></script>
     <script>
         var channel = {id: ""};
-        var chatClearPending;
+        var chatClear = {pending: true};
 
         function writeMessage(message)
         {
@@ -30,8 +30,8 @@
         var bulkWriteMessageSse = new EventSource("api/message/writebulk");
         bulkWriteMessageSse.onmessage = function (evt)
         {
-            console.log(chatClearPending);
-            if(chatClearPending == true)
+            console.log(chatClear.pending);
+            if(chatClear.pending == true)
             {
                 document.getElementById("chatDIV").innerHTML = "";
                 var messages = JSON.parse(evt.data);
@@ -39,7 +39,7 @@
                 {
                     writeMessage(messages[i]);
                 }
-                chatClearPending = false;
+                chatClear.pending = false;
             }
         };
         
@@ -82,7 +82,7 @@
         };
 
         function setChannel(element){
-            chatClearPending = true;
+            chatClear.pending = true;
             channel.id = element.value;
             var message = {channel_id: channel.id}
             $.post("api/message/get", message);
@@ -90,7 +90,6 @@
 
         function init()
         {
-            chatClearPending = true;
             document.getElementById("connectDIV").innerHTML = "";
             $.get('api/init');
         };

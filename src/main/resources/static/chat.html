@@ -6,7 +6,7 @@
     <script type="text/javascript" src="webjars/jquery/3.3.1/jquery.min.js"></script>
     <script>
         var channel = {id: ""};
-        var chatClearPending = true;
+        var chatClearPending;
 
         function writeMessage(message)
         {
@@ -30,7 +30,8 @@
         var bulkWriteMessageSse = new EventSource("api/message/writebulk");
         bulkWriteMessageSse.onmessage = function (evt)
         {
-            if(chatClearPending)
+            console.log(chatClearPending);
+            if(chatClearPending == true)
             {
                 document.getElementById("chatDIV").innerHTML = "";
                 var messages = JSON.parse(evt.data);
@@ -89,6 +90,7 @@
 
         function init()
         {
+            chatClearPending = true;
             document.getElementById("connectDIV").innerHTML = "";
             $.get('api/init');
         };

@@ -67,29 +67,19 @@ public class DiscordWebSocketHandler extends TextWebSocketHandler
                         break;
 
                     case "MESSAGE_CREATE":
-                        JSONObject JSONuser = JSONpayload.getJSONObject("author");
-                        JSONObject discordMessage = new JSONObject();
+                        discordClient.ReceiveMessage(JSONpayload);
+                        break;
 
-                        discordMessage.put("username", JSONuser.getString("username"));
-                        discordMessage.put("channel_id", JSONpayload.getString("channel_id"));
-                        discordMessage.put("content", JSONpayload.getString("content"));
+                    case "CHANNEL_CREATE":
+                        discordClient.AddChannel(JSONpayload);
+                        break;
 
-                        discordClient.ReceivedMessage(discordMessage);
+                    case "CHANNEL_DELETE":
+                        discordClient.DeleteChannel(JSONpayload);
                         break;
 
                     case "GUILD_CREATE":
-                        JSONArray JSONchannels = JSONpayload.getJSONArray("channels");
-                        
-                        for(int i = 0; i < JSONchannels.length(); i++)
-                        {
-                            JSONObject JSONchannel = (JSONObject)JSONchannels.get(i);
-                            if(JSONchannel.getInt("type") == 0)
-                            {
-                                String id = JSONchannel.getString("id");
-                                String name = JSONchannel.getString("name");
-                                discordClient.GetChannels().put(id, name);
-                            }
-                        }
+                        discordClient.SetGuilID(JSONpayload.getString("id"));
                         break;
 
                 }       

@@ -33,18 +33,61 @@ public class AppController
     }
 
     @GetMapping("/")
-    public String getIndex(Model model)
+    public String getIndex(Model model) throws Exception
     {
-        String str ="";
-        for (Map.Entry<String, String> pair : discordClient.GetChannels().entrySet())
-        {
-            str += "<button onclick=\"setChannel(this)\" value=\""+ pair.getKey() +"\">" + pair.getValue() + "</button><br/>";
-        }
-        model.addAttribute("channels", str);
-        return "chat";
+        return "chat.html";
     }
 
-    private void notifyProgress(CustomEmitter emitter, JSONObject message)
+    @GetMapping("api/init")
+    public void getInit() throws Exception
+    {
+        discordClient.GetChannels();
+    }
+
+    @GetMapping("api/channel/add")
+    public SseEmitter getChannelCreate()
+    {
+        SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
+        emitter.SetSubscription(discordClient.GetAddChannelSubject().subscribe(value -> notifyProgress(emitter, value),
+        emitter::completeWithError,
+        emitter::complete));
+        return emitter;
+    }
+
+    @GetMapping("api/channel/delete")
+    public SseEmitter getChannelDelete()
+    {
+        SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
+        emitter.SetSubscription(discordClient.GetDeleteChannelSubject().subscribe(value -> notifyProgress(emitter, value),
+        emitter::completeWithError,
+        emitter::complete));
+        return emitter;
+    }
+
+    @GetMapping("api/message/receive")
+    public SseEmitter getMessageReceive()
+    {
+        SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
+        emitter.SetSubscription(discordClient.GetReceiveMessageSubject().subscribe(value -> notifyProgress(emitter, value),
+        emitter::completeWithError,
+        emitter::complete));
+        return emitter;
+    }
+
+    @PostMapping("api/message/send")
+    public void postMessage(@RequestParam Map<String, String> messageMap) throws Exception
+    {
+        JSONObject JSONmessage = new JSONObject();
+
+        for (Map.Entry<String, String> pair : messageMap.entrySet())
+        {
+            JSONmessage.put(pair.getKey(), pair.getValue());
+        }
+
+        discordClient.SendMessage(JSONmessage);
+    }
+
+    private void notifyProgress(SubscribedEmitter emitter, JSONObject message)
     {
         try
         {
@@ -54,53 +97,6 @@ public class AppController
         {
             emitter.Unsubscribe();
             emitter.completeWithError(ex);
-        }
-    }
-    
-    private class CustomEmitter extends SseEmitter
-    {
-        private Subscription subscription;
-
-        public CustomEmitter(long timeout)
-        {
-            super(timeout);
-        }
-
-        public void SetSubscription(Subscription subscription)
-        {
-            this.subscription = subscription;
-        }
-
-        public void Unsubscribe()
-        {
-            subscription.unsubscribe();
-        }
-    }
-
-    @GetMapping("api/chat")
-    public SseEmitter streamChat()
-    {
-        CustomEmitter emitter = new CustomEmitter(1440000L);
-        emitter.SetSubscription(discordClient.GetSubject().subscribe(value -> notifyProgress(emitter, value),
-        emitter::completeWithError,
-        emitter::complete));
-        return emitter;
-    }
-
-    @RestController
-    private class CustomRestController
-    {
-        @PostMapping("api/message")
-        public void postMessage(@RequestParam Map<String, String> messageMap) throws Exception
-        {
-            JSONObject JSONmessage = new JSONObject();
-
-            for (Map.Entry<String, String> pair : messageMap.entrySet())
-            {
-                JSONmessage.put(pair.getKey(), pair.getValue());
-            }
-
-            discordClient.SendMessage(JSONmessage);
         }
     }
 }

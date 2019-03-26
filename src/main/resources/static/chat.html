@@ -1,0 +1,84 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>paska sivu idiooteille</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script type="text/javascript" src="webjars/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+        $.get("api/init");
+
+        var channel = {id: ""};
+
+        var receiveMessageSse = new EventSource("api/message/receive");
+        receiveMessageSse.onmessage = function (evt)
+        {
+            var message = JSON.parse(evt.data);
+            if(message.channel_id === channel.id)
+            {
+                var div = document.getElementById("chatDIV");
+                var text = "<" + message.username + ">    " + message.content;
+                div.appendChild(document.createTextNode(text));
+                div.appendChild(document.createElement("br"));
+            }
+        };
+        
+        var deleteChannelSse = new EventSource("api/channel/delete");
+        deleteChannelSse.onmessage = function (evt)
+        {
+            var channelData = JSON.parse(evt.data);
+            var deletedChannel = document.getElementById(channelData.id);
+            if(deletedChannel != null) deletedChannel.outerHTML = "";
+        };
+
+        var createChannelSse = new EventSource("api/channel/add");
+        createChannelSse.onmessage = function (evt)
+        {
+            var newChannel = JSON.parse(evt.data);
+
+            var div = document.getElementById("channelDIV");
+
+            var buttonDIV = document.createElement("div");
+            buttonDIV.setAttribute("id", newChannel.id);
+
+            var button = document.createElement("button");
+            button.setAttribute("value", newChannel.id);
+            button.innerHTML = newChannel.name;
+            button.setAttribute("onclick", "setChannel(this)");
+
+            buttonDIV.appendChild(button);
+            buttonDIV.appendChild(document.createElement("br"));
+            div.appendChild(buttonDIV);
+        };
+
+        function sendMessage(){
+            var textbox = document.getElementById("textbox")
+            var message = {content: textbox.value, channel_id: channel.id}
+            textbox.value = "";
+            $.post("api/message/send", message);
+        };
+
+        function setChannel(element){
+            document.getElementById("chatDIV").innerHTML = "";
+            channel.id = element.value;
+        };
+    </script>
+</head>
+<body>
+    
+    <div style="padding:15px">
+        <div id="chatDIV" style="padding:15px;height:600px;overflow-y:scroll;"></div>
+    </div>
+    <table>
+        <tr>
+            <td>
+                <div id="channelDIV"></div>
+            </td>
+            <td style="width:20px;" />
+            <td>
+                <input id="textbox" type="text">
+                <button onclick="sendMessage()">SEND</button>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

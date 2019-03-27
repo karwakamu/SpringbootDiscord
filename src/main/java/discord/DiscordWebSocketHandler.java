@@ -163,24 +163,25 @@ public class DiscordWebSocketHandler extends TextWebSocketHandler
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status)
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception
     {
-        log.info("Websocket Connection Closed [" + status.getReason() + "]");
-        resumeTimer = new Timer();
-        resumeTimer.scheduleAtFixedRate(new TimerTask()
-            {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        resume();
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-            },0,5000);
+        discordClient.Connect();
+        // log.info("Websocket Connection Closed [" + status.getReason() + "]");
+        // resumeTimer = new Timer();
+        // resumeTimer.scheduleAtFixedRate(new TimerTask()
+        //     {
+        //         @Override
+        //         public void run()
+        //         {
+        //             try
+        //             {
+        //                 resume();
+        //             }
+        //             catch (Exception e)
+        //             {
+        //                 e.printStackTrace();
+        //             }
+        //         }
+        //     },0,5000);
     }
 }

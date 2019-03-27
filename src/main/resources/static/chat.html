@@ -3,7 +3,11 @@
 <head>
     <title>paska sivu idiooteille</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <script type="text/javascript" src="webjars/jquery/3.3.1/jquery.min.js"></script>
+    <link rel="icon" href="https://discordapp.com/assets/07dca80a102d4149e9736d4b162cff6f.ico">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script>
         var channel = {id: ""};
 
@@ -39,27 +43,24 @@
                 div.appendChild(document.createElement("br"));
                 div.scrollTop = div.scrollHeight;
             }
-        }
+        };
 
         function addChannel(newChannel)
         {
-            var div = document.getElementById("channelDIV");
+            var buttonDIV = document.getElementById("channelDIV");
 
             var oldChannel = document.getElementById(newChannel.id);
             if(oldChannel != null) return;
 
-            var buttonDIV = document.createElement("div");
-            buttonDIV.setAttribute("id", newChannel.id);
-
             var button = document.createElement("button");
+            button.setAttribute("id", newChannel.id);
             button.setAttribute("value", newChannel.id);
+            button.setAttribute("class", "btn btn-primary");
             button.innerHTML = newChannel.name;
             button.setAttribute("onclick", "changeChannel(this)");
 
             buttonDIV.appendChild(button);
-            buttonDIV.appendChild(document.createElement("br"));
-            div.appendChild(buttonDIV);
-        }
+        };
 
         function sendMessage()
         {
@@ -100,22 +101,48 @@
         );
     </script>
 </head>
-<body>
-    
-    <div style="padding:15px">
-        <div id="chatDIV" style="padding:15px;height:600px;overflow-y:scroll;"></div>
+<body style="background-color: dimgrey; padding:15px">
+    <div id="chatDIV" class="text-white bg-dark" style="padding:15px; height:calc(100vh - 160px); overflow-y:scroll;"></div>
+    <div style="height:100px;">
+        <br />
+        <table >
+            <tr>
+                <td>
+                    <div class="btn-group-vertical" style="max-height:100px; overflow-y:scroll;" id="channelDIV"></div>
+                </td>
+                <td style="width:20px;" />
+                <td>
+                    <textarea class="form-control" style="height:100px; width:400px; resize:none;" id="textbox"></textarea>
+                </td>
+                <td style="width:100vh;" />
+                <td>
+                    <a href="https://www.google.com/search?&q=kissa" data-toggle="tooltip" data-placement="left" title="KISSA!">
+                        <img src="./kissa.jpg" class="rounded-circle" > 
+                    </a>
+                </td>
+            </tr>
+        </table>
     </div>
-    <table>
-        <tr>
-            <td>
-                <div id="channelDIV"></div>
-            </td>
-            <td style="width:20px;" />
-            <td>
-                <input id="textbox" type="text">
-                <button onclick="sendMessage()">SEND</button>
-            </td>
-        </tr>
-    </table>
+
+    <script>
+        var keyMap = {};
+        onkeydown = onkeyup = function(e)
+        {
+            e = e || event; //joku IE juttu emt
+
+            if(e.keyCode == 13 || e.keyCode == 16)
+            keyMap[e.keyCode] = e.type == 'keydown';
+
+            if (keyMap[13] && !keyMap[16])
+            {
+                event.preventDefault();
+                sendMessage();
+            }
+        };
+
+        $(document).ready(function(){
+            $('[data-toggle="tooltip"]').tooltip();   
+        });
+    </script>
 </body>
 </html>

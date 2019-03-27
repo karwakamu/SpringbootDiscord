@@ -6,40 +6,12 @@
     <script type="text/javascript" src="webjars/jquery/3.3.1/jquery.min.js"></script>
     <script>
         var channel = {id: ""};
-        var chatClear = {pending: true};
-
-        function writeMessage(message)
-        {
-            if(message.channel_id === channel.id)
-            {
-                var div = document.getElementById("chatDIV");
-                var text = "<" + message.username + ">    " + message.content;
-                div.appendChild(document.createTextNode(text));
-                div.appendChild(document.createElement("br"));
-                div.scrollTop = div.scrollHeight;
-            }
-        }
 
         var writeMessageSse = new EventSource("api/message/write");
         writeMessageSse.onmessage = function (evt)
         {
             var message = JSON.parse(evt.data);
             writeMessage(message);
-        };
-
-        var bulkWriteMessageSse = new EventSource("api/message/writebulk");
-        bulkWriteMessageSse.onmessage = function (evt)
-        {
-            if(chatClear.pending == true)
-            {
-                document.getElementById("chatDIV").innerHTML = "";
-                var messages = JSON.parse(evt.data);
-                for(var i in messages)
-                {
-                    writeMessage(messages[i]);
-                }
-                chatClear.pending = false;
-            }
         };
         
         var deleteChannelSse = new EventSource("api/channel/delete");
@@ -53,13 +25,28 @@
         var addChannelSse = new EventSource("api/channel/add");
         addChannelSse.onmessage = function (evt)
         {
-            removeConnect();
             var newChannel = JSON.parse(evt.data);
+            addChannel(newChannel)
+        };
+
+        function writeMessage(message)
+        {
+            if(message.channel_id === channel.id)
+            {
+                var div = document.getElementById("chatDIV");
+                var text = "<" + message.username + ">    " + message.content;
+                div.appendChild(document.createTextNode(text));
+                div.appendChild(document.createElement("br"));
+                div.scrollTop = div.scrollHeight;
+            }
+        }
+
+        function addChannel(newChannel)
+        {
+            var div = document.getElementById("channelDIV");
 
             var oldChannel = document.getElementById(newChannel.id);
             if(oldChannel != null) return;
-
-            var div = document.getElementById("channelDIV");
 
             var buttonDIV = document.createElement("div");
             buttonDIV.setAttribute("id", newChannel.id);
@@ -67,38 +54,50 @@
             var button = document.createElement("button");
             button.setAttribute("value", newChannel.id);
             button.innerHTML = newChannel.name;
-            button.setAttribute("onclick", "setChannel(this)");
+            button.setAttribute("onclick", "changeChannel(this)");
 
             buttonDIV.appendChild(button);
             buttonDIV.appendChild(document.createElement("br"));
             div.appendChild(buttonDIV);
-        };
+        }
 
-        function sendMessage(){
+        function sendMessage()
+        {
             var textbox = document.getElementById("textbox")
             var message = {content: textbox.value, channel_id: channel.id}
             textbox.value = "";
             $.post("api/message/send", message);
         };
 
-        function setChannel(element){
-            chatClear.pending = true;
+        function changeChannel(element)
+        {
+            document.getElementById("chatDIV").innerHTML = "";
+
             channel.id = element.value;
-            var message = {channel_id: channel.id}
-            $.post("api/message/get", message);
+            var data = {channel_id: channel.id}
+            $.post("api/message/history",
+                data,
+                function(data)
+                {
+                    var messages = JSON.parse(data);
+                    for(var i in messages)
+                    {
+                        writeMessage(messages[i]);
+                    }
+                }
+            );
         };
 
-        function init()
-        {
-            removeConnect();
-            $.get('api/init');
-        };
-
-        function removeConnect()
-        {
-            var connect = document.getElementById("connectDIV");
-            if(connect != null) connect.innerHTML = "";
-        };
+        $.get('api/channel/get',
+            function(data)
+            {
+                var channels = JSON.parse(data);
+                for(var i in channels)
+                {
+                    addChannel(channels[i]);
+                }
+            }
+        );
     </script>
 </head>
 <body>
@@ -115,11 +114,6 @@
             <td>
                 <input id="textbox" type="text">
                 <button onclick="sendMessage()">SEND</button>
-            </td>
-            <td>
-                <div id="connectDIV">
-                    <button onclick="init()">CONNECT</button>
-                </div>
             </td>
         </tr>
     </table>

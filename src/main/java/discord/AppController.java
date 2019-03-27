@@ -1,5 +1,7 @@
 package discord;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,14 +40,16 @@ public class AppController
         return "chat.html";
     }
 
-    @GetMapping("api/init")
-    public void getInit() throws Exception
+    @GetMapping("api/channel/get")
+    public ResponseEntity<String> getChannels() throws Exception
     {
-        discordClient.GetChannels();
+        JSONArray channels = discordClient.GetChannels();
+
+        return ResponseEntity.status(HttpStatus.OK).body(channels.toString());
     }
 
     @GetMapping("api/channel/add")
-    public SseEmitter getChannelAdd()
+    public SseEmitter getAddChannel()
     {
         SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
         emitter.SetSubscription(discordClient.GetAddChannelSubject().subscribe(value -> sendJSON(emitter, value),
@@ -55,7 +59,7 @@ public class AppController
     }
 
     @GetMapping("api/channel/delete")
-    public SseEmitter getChannelDelete()
+    public SseEmitter getDeleteChannel()
     {
         SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
         emitter.SetSubscription(discordClient.GetDeleteChannelSubject().subscribe(value -> sendJSON(emitter, value),
@@ -65,7 +69,7 @@ public class AppController
     }
 
     @GetMapping("api/message/write")
-    public SseEmitter getMessageWrite()
+    public SseEmitter getWriteMessage()
     {
         SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
         emitter.SetSubscription(discordClient.GetWriteMessageSubject().subscribe(value -> sendJSON(emitter, value),
@@ -74,18 +78,8 @@ public class AppController
         return emitter;
     }
 
-    @GetMapping("api/message/writebulk")
-    public SseEmitter getMessageWritebulk()
-    {
-        SubscribedEmitter emitter = new SubscribedEmitter(1440000L);
-        emitter.SetSubscription(discordClient.GetWritebulkMessageSubject().subscribe(value -> sendJSONarray(emitter, value),
-        emitter::completeWithError,
-        emitter::complete));
-        return emitter;
-    }
-
     @PostMapping("api/message/send")
-    public void postMessageSend(@RequestParam Map<String, String> messageMap) throws Exception
+    public void postSendMessage(@RequestParam Map<String, String> messageMap) throws Exception
     {
         JSONObject JSONmessage = new JSONObject();
 
@@ -97,8 +91,8 @@ public class AppController
         discordClient.SendMessage(JSONmessage);
     }
 
-    @PostMapping("api/message/get")
-    public void postMessageGet(@RequestParam Map<String, String> channelMap) throws Exception
+    @PostMapping("api/message/history")
+    public ResponseEntity<String> postMessageHistory(@RequestParam Map<String, String> channelMap) throws Exception
     {
         JSONObject JSONmessage = new JSONObject();
 
@@ -107,23 +101,12 @@ public class AppController
             JSONmessage.put(pair.getKey(), pair.getValue());
         }
 
-        discordClient.GetMessageHistory(JSONmessage.getString("channel_id"));
+        JSONArray history = discordClient.GetMessageHistory(JSONmessage.getString("channel_id"));
+
+        return ResponseEntity.status(HttpStatus.OK).body(history.toString());
     }
 
     private void sendJSON(SubscribedEmitter emitter, JSONObject message)
-    {
-        try
-        {
-            emitter.send(message.toString());
-        }
-        catch (Exception ex)
-        {
-            emitter.Unsubscribe();
-            emitter.completeWithError(ex);
-        }
-    }
-
-    private void sendJSONarray(SubscribedEmitter emitter, JSONArray message)
     {
         try
         {

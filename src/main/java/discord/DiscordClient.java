@@ -22,7 +22,7 @@ public class DiscordClient {
     private PublishSubject<JSONObject> WriteMessageSubject;
     private PublishSubject<JSONObject> AddChannelSubject;
     private PublishSubject<JSONObject> DeleteChannelSubject;
-    private PublishSubject<JSONArray> WritebulkMessageSubject;
+
     private DiscordWebSocketHandler socketHandler;
     private String token = "NTQ1OTUxNjYxNjcyMzY2MTEw.D3gcKQ.QL1qxBbdREraywJi188IAucLAe4";
 
@@ -30,7 +30,6 @@ public class DiscordClient {
         AddChannelSubject = PublishSubject.create();
         DeleteChannelSubject = PublishSubject.create();
         WriteMessageSubject = PublishSubject.create();
-        WritebulkMessageSubject = PublishSubject.create();
     }
 
     public void SetGuilID(String id) {
@@ -53,10 +52,6 @@ public class DiscordClient {
         return WriteMessageSubject;
     }
 
-    public PublishSubject<JSONArray> GetWritebulkMessageSubject() {
-        return WritebulkMessageSubject;
-    }
-
     public void WriteMessage(JSONObject payload) throws JSONException {
         JSONObject author = payload.getJSONObject("author");
         JSONObject message = new JSONObject();
@@ -66,19 +61,6 @@ public class DiscordClient {
         message.put("content", payload.getString("content"));
 
         WriteMessageSubject.onNext(message);
-    }
-
-    public void WritebulkMessage(JSONArray JSONmessages) throws JSONException {
-        JSONArray messages = new JSONArray();
-        for (int i = JSONmessages.length() - 1; i >= 0; i--) {
-            JSONObject message = new JSONObject();
-            JSONObject obj = JSONmessages.optJSONObject(i);
-            message.put("username", obj.getJSONObject("author").getString("username"));
-            message.put("channel_id", obj.getString("channel_id"));
-            message.put("content", obj.getString("content"));
-            messages.put(message);
-        }
-        WritebulkMessageSubject.onNext(messages);
     }
 
     public void AddChannel(JSONObject payload) throws JSONException {
@@ -100,25 +82,42 @@ public class DiscordClient {
         DeleteChannelSubject.onNext(channel);
     }
 
-    public void GetChannels() throws Exception {
+    public JSONArray GetChannels() throws Exception {
         URL url = new URL("https://discordapp.com/api/guilds/" + GuildID + "/channels");
         String content =  HttpGET(url);
         JSONArray JSONchannels = new JSONArray(content);
+        JSONArray channels = new JSONArray();
 
-        for (int i = 0; i < JSONchannels.length(); i++) {
-            AddChannel(JSONchannels.optJSONObject(i));
+        for (int i = 0; i < JSONchannels.length(); i++)
+        {
+            JSONObject obj = JSONchannels.getJSONObject(i);
+            if(obj.getInt("type") != 0) continue;
+
+            JSONObject channel = new JSONObject();
+            channel.put("id", obj.getString("id"));
+            channel.put("name", obj.getString("name"));
+            channels.put(channel);
         }
+
+        return channels;
     }
 
-    public void GetMessageHistory(String ChannelID) throws Exception {
-        if (ChannelID.isEmpty() || ChannelID.equals(""))
-            return;
-
+    public JSONArray GetMessageHistory(String ChannelID) throws Exception {
         URL url = new URL("https://discordapp.com/api/channels/" + ChannelID + "/messages");
         String content =  HttpGET(url);
         JSONArray JSONmessages = new JSONArray(content);
+        JSONArray messages = new JSONArray();
 
-        WritebulkMessage(JSONmessages);
+        for (int i = JSONmessages.length() - 1; i >= 0; i--) {
+            JSONObject obj = JSONmessages.optJSONObject(i);
+            JSONObject message = new JSONObject();
+            message.put("username", obj.getJSONObject("author").getString("username"));
+            message.put("channel_id", obj.getString("channel_id"));
+            message.put("content", obj.getString("content"));
+            messages.put(message);
+        }
+
+        return messages;
     }
 
     private String GetWebsocketURL() throws Exception {

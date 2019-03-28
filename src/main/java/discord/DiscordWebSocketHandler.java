@@ -17,7 +17,6 @@ public class DiscordWebSocketHandler extends TextWebSocketHandler
     private DiscordClient discordClient;
     private WebSocketSession session;
     private Timer heartbeatTimer;
-    private Timer resumeTimer;
     private int seq;
     private String sessionID;
 
@@ -36,10 +35,7 @@ public class DiscordWebSocketHandler extends TextWebSocketHandler
 
     public void sendJSON(JSONObject json) throws IOException
     {
-        if(session.isOpen())
-        {
-            session.sendMessage(new TextMessage(json.toString()));
-        }    
+        session.sendMessage(new TextMessage(json.toString()));
     }
 
     @Override
@@ -152,7 +148,6 @@ public class DiscordWebSocketHandler extends TextWebSocketHandler
     {
         log.info("Websocket Connected");
         this.session = session;
-        if(resumeTimer != null) resumeTimer.cancel();
         identify();
     }
 
@@ -165,23 +160,15 @@ public class DiscordWebSocketHandler extends TextWebSocketHandler
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception
     {
-        discordClient.Connect();
-        // log.info("Websocket Connection Closed [" + status.getReason() + "]");
-        // resumeTimer = new Timer();
-        // resumeTimer.scheduleAtFixedRate(new TimerTask()
-        //     {
-        //         @Override
-        //         public void run()
-        //         {
-        //             try
-        //             {
-        //                 resume();
-        //             }
-        //             catch (Exception e)
-        //             {
-        //                 e.printStackTrace();
-        //             }
-        //         }
-        //     },0,5000);
+        session.close();
+        log.info("Websocket Connection Closed [" + status.getReason() + "]");
+        try
+        {
+            resume();
+        }
+        catch (Exception e)
+        {
+            discordClient.Connect();
+        }
     }
 }

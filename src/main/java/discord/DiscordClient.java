@@ -84,14 +84,14 @@ public class DiscordClient {
 
     public JSONArray GetChannels() throws Exception {
         URL url = new URL("https://discordapp.com/api/guilds/" + GuildID + "/channels");
-        String content =  HttpGET(url);
+        String content = HttpGET(url);
         JSONArray JSONchannels = new JSONArray(content);
         JSONArray channels = new JSONArray();
 
-        for (int i = 0; i < JSONchannels.length(); i++)
-        {
+        for (int i = 0; i < JSONchannels.length(); i++) {
             JSONObject obj = JSONchannels.getJSONObject(i);
-            if(obj.getInt("type") != 0) continue;
+            if (obj.getInt("type") != 0)
+                continue;
 
             JSONObject channel = new JSONObject();
             channel.put("id", obj.getString("id"));
@@ -104,7 +104,7 @@ public class DiscordClient {
 
     public JSONArray GetMessageHistory(String ChannelID) throws Exception {
         URL url = new URL("https://discordapp.com/api/channels/" + ChannelID + "/messages");
-        String content =  HttpGET(url);
+        String content = HttpGET(url);
         JSONArray JSONmessages = new JSONArray(content);
         JSONArray messages = new JSONArray();
 
@@ -122,18 +122,32 @@ public class DiscordClient {
 
     private String GetWebsocketURL() throws Exception {
         URL url = new URL("https://discordapp.com/api/gateway");
-        String content =  HttpGET(url);
+        String content = HttpGET(url);
         JSONObject json = new JSONObject(content);
         return json.getString("url");
     }
 
-    public void Connect() throws Exception {
+    private boolean ConnectWebsocket() throws Exception {
         String url = GetWebsocketURL() + "/?v=6&encoding=json";
         socketHandler = new DiscordWebSocketHandler(this);
 
         WebSocketConnectionManager connectionManager = new WebSocketConnectionManager(new StandardWebSocketClient(),
                 socketHandler, url);
         connectionManager.start();
+        return true;
+    }
+
+    public void Connect() throws Exception
+    {
+        boolean connected = false;
+        int t = 5000;
+        int max = 3600000;
+        while(!connected)
+        {
+            if(t < max) t += t;
+            connected = ConnectWebsocket();
+            if(!connected) Thread.sleep(t);
+        }
     }
 
     public void SendMessage(JSONObject JSONmessage) throws Exception {

@@ -10,6 +10,17 @@ public class SubscribedEmitter extends SseEmitter
         public SubscribedEmitter(long timeout)
         {
             super(timeout);
+            Unsubscriber unsub = new Unsubscriber();
+            onCompletion(unsub);
+            onTimeout(unsub);
+        }
+
+        private class Unsubscriber implements Runnable 
+        {
+            @Override
+            public void run() {
+                Unsubscribe();
+            }
         }
 
         public void SetSubscription(Subscription subscription)

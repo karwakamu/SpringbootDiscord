@@ -24,7 +24,7 @@ public class DiscordClient {
     private PublishSubject<JSONObject> DeleteChannelSubject;
 
     private DiscordWebSocketHandler socketHandler;
-    private String token = "NTQ1OTUxNjYxNjcyMzY2MTEw.D3gcKQ.QL1qxBbdREraywJi188IAucLAe4";
+    private String token = "discord_bot_token_tähän"; //TODO joku fiksumpi tapa tehdä tää, riippuu vähän missä hostaa ja todnäk en hostaa enää missään eli en jaksa korjata
 
     public DiscordClient() {
         AddChannelSubject = PublishSubject.create();
